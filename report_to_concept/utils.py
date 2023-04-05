@@ -220,6 +220,10 @@ def get_annotated_text(new_annotations):
 
 def annotations_to_concepts(annotations):
     concepts = []
+    observation = []
+    located_at = []
+    suggestive_of = []
+
     annotations = get_radgraph_processed_annotations(annotations)
     # Unrolling all concepts. I.e. observation, located_at, suggestive_of are distinct concepts
     for annotation in annotations["processed_annotations"]:
