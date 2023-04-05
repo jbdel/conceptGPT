@@ -100,3 +100,17 @@ print(subtext)
 >> FINDINGS : The lungs are clear without focal consolidation , , or edema . The cardiomediastinal silhouette is within normal limits . No acute osseous abnormalities . IMPRESSION : No acute cardiopulmonary process .
 ```
 
+### Evaluation
+`run.py` evaluate the prediction of the all_concepts and concat_concepts by radgraph against the ground_truth `test.radgraph.json.
+
+right now:
+```python
+print(f1_score(all_concepts_gt, all_concept_pred, average="micro"))
+print(f1_score(concat_concepts_gt, concat_concepts_pred, average="micro"))
+print(f1_score(all_concepts_gt, all_concept_pred, average="macro"))
+print(f1_score(concat_concepts_gt, concat_concepts_pred, average="macro"))
+# 0.851961509992598
+# 0.750877192982456
+# 0.63318944983074
+# 0.5066821072042885
+```
