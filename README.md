@@ -6,11 +6,20 @@ There are two tools:
 
 ```python
 import json
-from utils import get_concept
-reports = [
-    "1 . nodular opacities in the left lower lung with additional small ground-glass opacities bilaterally may represent infection . chest ct recommended for further assessment given infectious symptoms . 2 . abdominal wall varices of indeterminate etiology . 3 . splenomegaly . 4 . coronary artery calcification . acute findings were discussed with dr . ___ by dr . ___ by telephone at 6 : 54 p . m . on ___ ."
-]
-concepts = get_concepts(report=reports[0])
+from utils import annotations_to_concepts
+
+def get_concepts(report=None, annotations=None):
+    assert (report is None) ^ (annotations is None)
+
+    if report is not None:
+        annotations = RADGRAPH_MODEL(report)
+        assert (len(annotations)) == 1
+
+    return annotations_to_concepts(annotations)
+    
+report = "1 . nodular opacities in the left lower lung with additional small ground-glass opacities bilaterally may represent infection . chest ct recommended for further assessment given infectious symptoms . 2 . abdominal wall varices of indeterminate etiology . 3 . splenomegaly . 4 . coronary artery calcification . acute findings were discussed with dr . ___ by dr . ___ by telephone at 6 : 54 p . m . on ___ ."
+
+concepts = get_concepts(report=report)
 print(json.dumps(concepts, indent=4))
 ```
 
