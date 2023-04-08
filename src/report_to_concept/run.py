@@ -1,28 +1,18 @@
+import os
 import json
 import tqdm
-from radgraph import F1RadGraph
-from utils import annotations_to_concepts, get_annotated_text
 from sklearn.metrics import f1_score
 
-RADGRAPH_SCORER = F1RadGraph(reward_level="all", cuda=-1)
-RADGRAPH_MODEL = RADGRAPH_SCORER.radgraph
-
-
-def get_concepts(report=None, annotations=None):
-    assert (report is None) ^ (annotations is None)
-
-    if report is not None:
-        annotations = RADGRAPH_MODEL(report)
-        assert (len(annotations)) == 1
-
-    return annotations_to_concepts(annotations)
-
+import src.constants
+from src.report_to_concept.utils import annotations_to_concepts, get_annotated_text, get_concepts
 
 # getting all labels (fine-grained - coarse-grained)
 all_concepts = []
 concat_concepts = []
 annotated_texts_with_labels = {}
-test_annotations = json.load(open("test.radgraph.json"))
+
+with open(os.path.join(src.constants.PROJECT_DIR, "src/report_to_concept/test.radgraph.json"), 'r') as f:
+    test_annotations = json.load(f)
 
 for annotation in tqdm.tqdm(test_annotations.values()):
     # creating inference radgraph dict from annotation

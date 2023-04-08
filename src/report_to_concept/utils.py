@@ -1,10 +1,14 @@
 import openai
 import backoff  # for exponential backoff
+from radgraph import F1RadGraph
 
 from collections import defaultdict
 
 openai.organization = "org-4KtF0NDlYTDYngBanKKnzlpd"
 openai.api_key = "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"
+
+RADGRAPH_SCORER = F1RadGraph(reward_level="all", cuda=-1)
+RADGRAPH_MODEL = RADGRAPH_SCORER.radgraph
 
 
 @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
@@ -250,3 +254,13 @@ def annotations_to_concepts(annotations):
 
     annotations["concat_concepts"] = list(set(concepts))
     return annotations
+
+
+def get_concepts(report=None, annotations=None):
+    assert (report is None) ^ (annotations is None)
+
+    if report is not None:
+        annotations = RADGRAPH_MODEL(report)
+        assert (len(annotations)) == 1
+
+    return annotations_to_concepts(annotations)
