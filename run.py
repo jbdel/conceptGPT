@@ -36,9 +36,9 @@ for case in range(6):
         case_k_dir = os.path.join(src.constants.PROJECT_DIR, f'output/{modality}/case{case}_k{k}')
         if not os.path.exists(case_k_dir):
             os.makedirs(case_k_dir)
-        findings_path = os.path.join(case_k_dir, 'generated_summaries.tok')
+        findings_path = os.path.join(case_k_dir, 'reference_findings.tok')
         reference_summary_path = os.path.join(case_k_dir, 'reference_summaries.tok')
-        generated_summary_path = os.path.join(case_k_dir, 'reference_findings.tok')
+        generated_summary_path = os.path.join(case_k_dir, 'generated_summaries.tok')
         
         # generate in-context prompts
         in_context_findings_list, in_context_summary_list = add_in_context_prompt(
