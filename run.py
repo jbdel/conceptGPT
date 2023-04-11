@@ -33,10 +33,15 @@ for case in range(6):
 
     # run all k
     for k in [0, 1, 2, 4, 8]:
-        generated_summary_path = os.path.join(src.constants.PROJECT_DIR, f'output/{modality}/case{case}_k{k}_generated_summaries.tok')
-
+        case_k_dir = os.path.join(src.constants.PROJECT_DIR, f'output/{modality}/case{case}_k{k}')
+        if not os.path.exists(case_k_dir):
+            os.makedirs(case_k_dir)
+        findings_path = os.path.join(case_k_dir, 'generated_summaries.tok')
+        reference_summary_path = os.path.join(case_k_dir, 'reference_summaries.tok')
+        generated_summary_path = os.path.join(case_k_dir, 'reference_findings.tok')
+        
         # generate in-context prompts
-        test_findings_list, test_summary_list = add_in_context_prompt(
+        in_context_findings_list, in_context_summary_list = add_in_context_prompt(
             train_findings_list,
             train_concepts_list,
             train_summary_list, 
@@ -58,20 +63,18 @@ for case in range(6):
         test_generated_summary_list = []
 
         n_too_long = 0
-        for i in tqdm(range(len(test_findings_list))):
+        for i in tqdm(range(len(in_context_findings_list))):
             # prompt too long!
-            if len(test_findings_list[i]) > 4096:
+            if len(in_context_findings_list[i]) > 4096:
                 test_generated_summary_list.append('')
                 n_too_long += 1
             else:
                 # run in-context prompt through gpt
                 generated_summary = call_chatgpt(
-                        prompt=test_findings_list[i],
+                        prompt=in_context_findings_list[i],
                         temperature=0,
                         n=1)["choices"][0]["message"]["content"]
 
-                # just so it writes a bit cleaner to .tok
-                generated_summary = generated_summary.replace('\n', ' ')
                 test_generated_summary_list.append(generated_summary)
 
         print(f'CASE: {case}, k: {k}, N_TOO_LONG: {n_too_long}')
@@ -82,6 +85,20 @@ for case in range(6):
         # print('GENERATED:')
         # print(test_generated_summary_list[0])
 
+        with open(findings_path, 'w') as f:
+            for line in in_context_findings_list:
+                # just so it writes a bit cleaner to .tok
+                cleaned_line = line.replace('\n', ' ')
+                f.write(f"{cleaned_line}\n")
+        
+        with open(reference_summary_path, 'w') as f:
+            for line in in_context_summary_list:
+                # just so it writes a bit cleaner to .tok
+                cleaned_line = line.replace('\n', ' ')
+                f.write(f"{cleaned_line}\n")
+
         with open(generated_summary_path, 'w') as f:
             for line in test_generated_summary_list:
-                f.write(f"{line}\n")
+                # just so it writes a bit cleaner to .tok
+                cleaned_line = line.replace('\n', ' ')
+                f.write(f"{cleaned_line}\n")
