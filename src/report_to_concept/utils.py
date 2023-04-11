@@ -38,11 +38,18 @@ def correct_modifier_order(modifiers):
     return modifiers
 
 
-def recursive_modifier(annotations, ind, d):
+def recursive_modifier(annotations, ind, modify_dict, done=None):
+    if done is None:
+        done = set()
+
+    if ind in done:
+        return []
+    done.add(ind)
+
     modifiers = []
-    if ind in d:
-        for modifier_index in d[ind]:
-            modifiers += recursive_modifier(annotations, modifier_index, d)
+    if ind in modify_dict:
+        for modifier_index in modify_dict[ind]:
+            modifiers += recursive_modifier(annotations, modifier_index, modify_dict, done)
     modifiers.append((annotations[ind]["tokens"], annotations[ind]["label"], annotations[ind]["start_ix"]))
     return modifiers
 
@@ -50,15 +57,6 @@ def recursive_modifier(annotations, ind, d):
 def sort_words_by_index(word_list, index_list):
     sorted_words = [word_list[index_list.index(i)] for i in sorted(index_list)]
     return sorted_words
-
-
-def filter_loop(d):
-    to_keep = defaultdict(list)
-    for k, v in d.items():
-        opposite = (v[0], [k])
-        if opposite not in to_keep.items():
-            to_keep[k] = v
-    return to_keep
 
 
 def get_radgraph_processed_annotations(radgraph_annotations):
@@ -105,10 +103,6 @@ def get_radgraph_processed_annotations(radgraph_annotations):
                 target = relation[1]
                 obs_suggest_obs[index].append(target)
 
-    # filtering loop
-    obs_modified_by_obs = filter_loop(obs_modified_by_obs)
-    anat_modify_anat = filter_loop(anat_modify_anat)
-
     processed_observations = []
     # For each main observation
     for observation in all_observations:
@@ -130,7 +124,7 @@ def get_radgraph_processed_annotations(radgraph_annotations):
         modifiers_tokens = [m[0] for m in modifiers]
 
         # We rearrange the words according to start_ix (order they appear in the sentence)
-        # for example wall abdominal -> adbominal wall
+        # for example wall abdominal -> abdominal wall
         modifiers_tokens = sort_words_by_index(modifiers_tokens, modifiers_start_ix)
         modifiers_start_ix = sorted(modifiers_start_ix)
 
@@ -139,11 +133,6 @@ def get_radgraph_processed_annotations(radgraph_annotations):
         modifiers_tokens = [x for i, x in enumerate(modifiers_tokens) if x not in modifiers_tokens[:i]]
         modifiers_start_ix = [x for i, x in enumerate(modifiers_start_ix) if
                               x not in modifiers_start_ix[:i]]
-
-        # modifiers have been retrieved, lets ask chatGPT the correct writing order
-        # if len(modifiers_tokens.split(" ")) > 1:
-        #     modifiers_tokens = correct_modifier_order(modifiers_tokens)
-        #     modifiers_tokens = modifiers_tokens.lower().strip("\n .\"'")
 
         record["observation"] = " ".join(modifiers_tokens).lower().strip("\n .\"'")
         record["observation_start_ix"] = modifiers_start_ix
@@ -176,13 +165,15 @@ def get_radgraph_processed_annotations(radgraph_annotations):
                 modifiers_tokens = [m[0] for m in modifiers]
 
                 # Sorting
-                modifiers_tokens = " ".join(sort_words_by_index(modifiers_tokens, modifiers_start_ix))
+                modifiers_tokens = sort_words_by_index(modifiers_tokens, modifiers_start_ix)
                 modifiers_start_ix = sorted(modifiers_start_ix)
 
-                # if len(modifiers_tokens.split(" ")) > 1:
-                #     modifiers_tokens = correct_modifier_order(modifiers_tokens)
+                # No duplicates
+                modifiers_tokens = [x for i, x in enumerate(modifiers_tokens) if x not in modifiers_tokens[:i]]
+                modifiers_start_ix = [x for i, x in enumerate(modifiers_start_ix) if
+                                      x not in modifiers_start_ix[:i]]
 
-                located_at.append(modifiers_tokens.lower().strip("\n .\"'"))
+                located_at.append(" ".join(modifiers_tokens).lower().strip("\n .\"'"))
                 located_at_start_ix.append(modifiers_start_ix)
 
             record["located_at"] = located_at
