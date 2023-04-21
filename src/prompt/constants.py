@@ -1,18 +1,26 @@
 PROJECT_DIR = '/home/cvanuden/git-repos/conceptGPT'
 DATA_DIR = '/home/cvanuden/git-repos/radprompt/data/rrs/mimic-iii'
 
+MODALITY = 'XR_chest'
+
 IN_CONTEXT_LEARNING_SENTENCE_TRANSFORMER = 'pritamdeka/PubMedBERT-mnli-snli-scinli-scitail-mednli-stsb'
 
 NUM_BEAMS = 2
 MAX_NEW_TOKENS = 64
+OPENAI_MAX_CONTEXT_LEN = 4096
 
-MODELS = {
+HUGGINGFACE_MODELS = {
     'biogpt': 'microsoft/BioGPT',
     'biogpt-large': 'microsoft/BioGPT-Large',
     'biomedlm': 'stanford-crfm/BioMedLM',
     'stablelm-base-alpha-3b': 'stabilityai/stablelm-base-alpha-3b',
     'stablelm-tuned-alpha-3b': 'stabilityai/stablelm-tuned-alpha-3b',
+    'stablelm-base-alpha-7b': 'stabilityai/stablelm-base-alpha-7b',
+    'stablelm-tuned-alpha-7b': 'stabilityai/stablelm-tuned-alpha-7b',
+    'openassistant-stablelm-7b': 'OpenAssistant/stablelm-7b-sft-v7-epoch-3'
 }
+
+OPENAI_MODELS = ['gpt-3.5-turbo', 'gpt-4']
 
 CONFIGS = {
     # 0: {

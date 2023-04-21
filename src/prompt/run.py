@@ -5,9 +5,9 @@ from sentence_transformers import SentenceTransformer
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from tqdm import tqdm
 
-import src.constants
-from src.prompt.utils import add_in_context_prompt, call_chatgpt, load_findings_concepts_and_summary, generate_faiss_index
-# from src.report_to_concept.utils import call_chatgpt
+import constants
+from models import call_biogpt_generator, call_lm_generator, call_openai
+from utils import add_in_context_prompt, load_findings_concepts_and_summary, generate_faiss_index
 
 modality = 'XR_chest'
 N_EXAMPLES = 10
@@ -16,17 +16,17 @@ N_EXAMPLES = 10
 model_name = 'biomedlm'
 case = 3
 # set config
-CONFIG = src.constants.CONFIGS[case]
+CONFIG = constants.CONFIGS[case]
 
 # model setup
 device = "cuda"
 if 'openai' in model_name:
     pass
 if 'biogpt' in model_name:
-    generator = pipeline(model=src.constants.MODELS[model_name])
+    generator = pipeline(model=constants.HUGGINGFACE_MODELS[model_name])
 else:
-    tokenizer = AutoTokenizer.from_pretrained(src.constants.MODELS[model_name])
-    model = AutoModelForCausalLM.from_pretrained(src.constants.MODELS[model_name])
+    tokenizer = AutoTokenizer.from_pretrained(constants.HUGGINGFACE_MODELS[model_name])
+    model = AutoModelForCausalLM.from_pretrained(constants.HUGGINGFACE_MODELS[model_name])
     model.half().cuda()
     
 
@@ -40,7 +40,7 @@ test_concepts_list = test_concepts_list[:N_EXAMPLES]
 test_summary_list = test_summary_list[:N_EXAMPLES]
 
 # for in-context prompt examples, generate FAISS index with training examples
-faiss_index_save_path = os.path.join(src.constants.PROJECT_DIR, f'data/{modality}/train_findings_index.bin')
+faiss_index_save_path = os.path.join(constants.PROJECT_DIR, f'data/{modality}/train_findings_index.bin')
 if os.path.exists(faiss_index_save_path):
     cpu_index = faiss.read_index(faiss_index_save_path)
 else:
@@ -49,7 +49,7 @@ gpu_index = faiss.index_cpu_to_all_gpus(cpu_index)
 
 # run all k
 for k in [0, 1, 2, 4]:
-    case_k_dir = os.path.join(src.constants.PROJECT_DIR, f'output/{modality}/{model_name}/case{case}/k{k}')
+    case_k_dir = os.path.join(constants.PROJECT_DIR, f'output/{modality}/{model_name}/case{case}/k{k}')
     if not os.path.exists(case_k_dir):
         os.makedirs(case_k_dir)
     findings_path = os.path.join(case_k_dir, 'reference_findings.tok')
@@ -79,47 +79,21 @@ for k in [0, 1, 2, 4]:
     test_generated_summary_list = []
 
     if 'openai' not in model_name:
-        generator = pipeline(model=src.constants.MODELS[model_name])
+        generator = pipeline(model=constants.HUGGINGFACE_MODELS[model_name])
 
-    n_too_long = 0
     for i in tqdm(range(len(in_context_findings_list))):
-        # prompt too long!
-        # if len(in_context_findings_list[i]) > 1024:
-        #     test_generated_summary_list.append('')
-        #     n_too_long += 1
-        # else:
+        prompt = in_context_findings_list[i]
         if 'openai' in model_name:
             # run in-context prompt through openai model
-            generated_summary = call_chatgpt(
-                    prompt=in_context_findings_list[i],
-                    temperature=0,
-                    n=1)["choices"][0]["message"]["content"]
+            generated_summary = call_openai(prompt)
         if 'biogpt' in model_name:
-            outputs = generator(
-                in_context_findings_list[i],
-                num_beams=src.constants.NUM_BEAMS,
-                max_new_tokens=src.constants.MAX_NEW_TOKENS,
-                early_stopping=True,
-                do_sample=False,
-                return_full_text=False
-            )
-            generated_summary = outputs[0]['generated_text']
-
-            test_generated_summary_list.append(generated_summary)
+            # run in-context prompt through huggingface bioGPT model
+            generated_summary = call_biogpt_generator(prompt, generator)
         else:
-            # run in-context prompt through huggingface model
-            inputs = tokenizer(in_context_findings_list[i], return_tensors="pt").to(device)
-            tokens = model.generate(
-                **inputs,
-                num_beams=src.constants.NUM_BEAMS,
-                max_new_tokens=src.constants.MAX_NEW_TOKENS,
-                early_stopping=True,
-                do_sample=False,
-            )
-            generated_summary = tokenizer.decode(tokens[0], skip_special_tokens=True)
+            # run in-context prompt through huggingface biomedLM or stableLM model
+            generated_summary = call_lm_generator(prompt, model, tokenizer)
 
-
-    print(f'CASE: {case}, k: {k}, N_TOO_LONG: {n_too_long}')
+        test_generated_summary_list.append(generated_summary)
 
     with open(findings_path, 'w') as f:
         for line in in_context_findings_list:

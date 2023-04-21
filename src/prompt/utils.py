@@ -3,44 +3,60 @@ import os
 import random 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
-import openai
-import backoff  # for exponential backoff
+from nltk.tokenize import wordpunct_tokenize
 
-import src.constants as constants
 
-openai.organization = "org-4KtF0NDlYTDYngBanKKnzlpd"
-openai.api_key = "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"
+import constants
 
-@backoff.on_exception(backoff.expo, openai.error.RateLimitError)
-def completions_with_backoff(**kwargs):
-    return openai.ChatCompletion.create(**kwargs)
+# https://github.com/ysmiura/ifcc/blob/6c111dbdfe7ce9d3150a5ad90360584cfd2b8442/clinicgen/text/tokenizer.py#L24
+# Improving Factual Completeness and Consistency of Image-to-text Radiology Report Generation.
+def ifcc_clean_report(report):
+    report = report.lower()
+    return ' '.join(wordpunct_tokenize(report))
 
-def call_chatgpt(prompt, temperature, n):
-    return completions_with_backoff(
-        # model="gpt-4",
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=temperature,
-        n=n,
-    )
+def split_sentences(sentences, processing):
+    return [processing(s.strip()).split() for s in sentences]
+
+
+def make_sentences(root, split, file, processing):
+    sentences = load_file(os.path.join(root, split + '.' + file))
+    return split_sentences(sentences, processing)
+
+def load_file(path):
+    """Default loading function, which loads nth sentence at line n.
+    """
+    with open(path, 'r') as f:
+        content = f.read().strip()
+    return [s for s in content.split('\n')]
+
 
 def load_findings_concepts_and_summary(modality, concept_type, split):
-    finding_path = os.path.join(constants.DATA_DIR, modality, f'{split}.findings.tok')
+    # finding_path = os.path.join(constants.DATA_DIR, modality, f'{split}.findings.tok')
     concept_path = os.path.join(constants.DATA_DIR, modality, f'{split}.{concept_type}.tok')
-    summary_path = os.path.join(constants.DATA_DIR, modality, f'{split}.impression.tok')
+    # summary_path = os.path.join(constants.DATA_DIR, modality, f'{split}.impression.tok')
 
-    with open(finding_path, 'r') as f_f, open(summary_path, 'r') as f_s:
-        findings_list = f_f.readlines()
-        summary_list = f_s.readlines()
+    finding_path = os.path.join(f'/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/findings/{split}.findings.tok')
+    summary_path = os.path.join(f'/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/impression/{split}.impression.tok')
+
+    # with open(finding_path, 'r') as f_f, open(summary_path, 'r') as f_s:
+    #     findings_list = f_f.readlines()
+    #     summary_list = f_s.readlines()
         
-        assert len(findings_list) == len(summary_list)
+    #     print(len(findings_list), len(summary_list))
+    #     assert len(findings_list) == len(summary_list)
 
+    findings_list = make_sentences(root='/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/findings/', split=split, file='findings.tok', processing=ifcc_clean_report)
+    findings_list = [" ".join(findings) for findings in findings_list]
+    summary_list = make_sentences(root='/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/impression/', split=split, file='impression.tok', processing=ifcc_clean_report)
+    summary_list = [" ".join(summ) for summ in summary_list]
+
+    print(len(findings_list), len(summary_list), summary_list[0])
     concepts_list = []
-    if os.path.exists(concept_path):
-        with open(concept_path, 'r') as f_c:
-            concepts_list = f_c.readlines()
+    # if os.path.exists(concept_path):
+    #     with open(concept_path, 'r') as f_c:
+    #         concepts_list = f_c.readlines()
 
-            assert len(findings_list) == len(concepts_list)
+    #         assert len(findings_list) == len(concepts_list)
 
     return findings_list, concepts_list, summary_list
 
