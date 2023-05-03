@@ -5,8 +5,8 @@ MODALITY = 'XR_chest'
 
 IN_CONTEXT_LEARNING_SENTENCE_TRANSFORMER = 'pritamdeka/PubMedBERT-mnli-snli-scinli-scitail-mednli-stsb'
 
-NUM_BEAMS = 2
-MAX_NEW_TOKENS = 64
+NUM_BEAMS = 4
+MAX_NEW_TOKENS = 128
 OPENAI_MAX_CONTEXT_LEN = 4096
 
 HUGGINGFACE_MODELS = {
@@ -17,7 +17,8 @@ HUGGINGFACE_MODELS = {
     'stablelm-tuned-alpha-3b': 'stabilityai/stablelm-tuned-alpha-3b',
     'stablelm-base-alpha-7b': 'stabilityai/stablelm-base-alpha-7b',
     'stablelm-tuned-alpha-7b': 'stabilityai/stablelm-tuned-alpha-7b',
-    'openassistant-stablelm-7b': 'OpenAssistant/stablelm-7b-sft-v7-epoch-3'
+    'openassistant-stablelm-7b': 'OpenAssistant/stablelm-7b-sft-v7-epoch-3',
+    'open-llama': 'openlm-research/open_llama_7b_preview_200bt'
 }
 
 OPENAI_MODELS = ['gpt-3.5-turbo', 'gpt-4']
