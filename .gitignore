@@ -4,4 +4,6 @@ src/prompt/__pycache__/
 src/concept_to_report/__pycache__/
 data/
 output/
+logs/
+ckpts/
 *.bin

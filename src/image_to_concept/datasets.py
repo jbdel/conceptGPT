@@ -49,7 +49,7 @@ class ImageDataset(Dataset):
                 "labels": self.labels[index]}
 
 
-def fetch_data(filtered_concepts, concept_type, annotations, image_dir):
+def fetch_data(filtered_concepts, concept_type, annotations, image_dir, num_workers=0):
   train_dataset = ImageDataset(
     split="train",
     image_dir=image_dir,
@@ -65,7 +65,7 @@ def fetch_data(filtered_concepts, concept_type, annotations, image_dir):
 
   train_dataloader = DataLoader(
     train_dataset,
-    num_workers=2,
+    num_workers=num_workers,
     batch_sampler=train_sampler,
     pin_memory=True
   )
@@ -86,7 +86,7 @@ def fetch_data(filtered_concepts, concept_type, annotations, image_dir):
 
   val_dataloader = DataLoader(
     val_dataset,
-    num_workers=2,
+    num_workers=num_workers,
     batch_sampler=val_sampler,
     pin_memory=True
   )
