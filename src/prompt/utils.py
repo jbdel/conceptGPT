@@ -6,7 +6,7 @@ from tqdm import tqdm
 from nltk.tokenize import wordpunct_tokenize
 
 
-import constants
+import prompt.constants as constants
 
 # https://github.com/ysmiura/ifcc/blob/6c111dbdfe7ce9d3150a5ad90360584cfd2b8442/clinicgen/text/tokenizer.py#L24
 # Improving Factual Completeness and Consistency of Image-to-text Radiology Report Generation.
