@@ -6,6 +6,9 @@ import pytorch_lightning as pl
 
 from collections import OrderedDict
 import math
+import numpy as np
+from sklearn.metrics import average_precision_score, roc_auc_score
+
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
@@ -44,6 +47,15 @@ class BiomedCLIPClassifier(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         return self.shared_step(batch, "test")
 
+    def training_epoch_end(self, training_step_outputs):
+        return self.shared_epoch_end(training_step_outputs, "train")
+
+    def validation_epoch_end(self, validation_step_outputs):
+        return self.shared_epoch_end(validation_step_outputs, "val")
+
+    def test_epoch_end(self, test_step_outputs):
+        return self.shared_epoch_end(test_step_outputs, "test")
+
     def shared_step(self, batch, split):
         # training_step defines the train loop.
         # it is independent of forward
@@ -65,6 +77,39 @@ class BiomedCLIPClassifier(pl.LightningModule):
 
         return_dict = {"loss": loss, "logit": logits.detach(), "label": labels.detach()}
         return return_dict
+
+    def shared_epoch_end(self, step_outputs, split):
+        logit = torch.cat([x["logit"] for x in step_outputs])
+        label = torch.cat([x["label"] for x in step_outputs])
+        prob = torch.sigmoid(logit)
+
+        label = label.detach().cpu().numpy()
+        prob = prob.detach().cpu().numpy()
+
+        auroc_list, auprc_list = [], []
+        for i in range(label.shape[1]):
+            label_cls = label[:, i]
+            prob_cls = prob[:, i]
+
+            # check if NaNs or all labels from one class only
+            if np.isnan(prob_cls).any() or np.all(np.isclose(label_cls, label_cls[0])):
+                auprc_list.append(0)
+                auroc_list.append(0)
+            else:
+                auprc_list.append(average_precision_score(label_cls, prob_cls))
+                auroc_list.append(roc_auc_score(label_cls, prob_cls))
+
+        auprc = np.mean(auprc_list)
+        auroc = np.mean(auroc_list)
+
+        self.log(f"{split}_auroc", auroc, on_epoch=True, logger=True, prog_bar=True)
+        self.log(f"{split}_auprc", auprc, on_epoch=True, logger=True, prog_bar=True)
+
+        # if split == "test":
+        #     results_csv = os.path.join(OUTPUT_DIR, "results.csv")
+        #     results = {"auroc": auroc, "auprc": auprc}
+        #     with open(results_csv, "w") as fp:
+        #         json.dump(results, fp)
 
     def configure_optimizers(self):
         optimizer = optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.lr)
