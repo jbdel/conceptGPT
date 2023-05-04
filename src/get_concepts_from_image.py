@@ -30,6 +30,7 @@ CKPT_DIR = '/home/cvanuden/git-repos/conceptGPT/ckpts/'
 
 CONCEPT_TYPES = ["all_concepts", "concat_concepts"]
 THRESHOLDS = [0.001]
+# CONCEPT_TYPES = ["all_concepts", "concat_concepts"]
 # THRESHOLDS = [0.0001, 0.0002, 0.0005, 0.001]
 
 MAX_EPOCHS = 20
@@ -74,7 +75,7 @@ for i, concept_type in enumerate(CONCEPT_TYPES):
 
         # Do experiments
         train_dataloader, val_dataloader = fetch_data(filtered_concepts, concept_type, annotations, IMAGE_DIR, num_workers=NUM_WORKERS)
-        model = BiomedCLIPClassifier(lr=LR, output_dim=num_concepts)
+        model = BiomedCLIPClassifier(output_dim=num_concepts)
 
         trainer = pl.Trainer(callbacks=callbacks, logger=logger, gpus=1, deterministic=True, max_epochs=MAX_EPOCHS)
         trainer.fit(model, train_dataloader, val_dataloader)
