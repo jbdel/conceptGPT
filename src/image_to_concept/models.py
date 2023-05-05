@@ -33,7 +33,7 @@ from transformers import ViTImageProcessor, ViTModel
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
-import clip
+import CheXzero.clip as clip
 
 
 class BaseClassifier(pl.LightningModule):
