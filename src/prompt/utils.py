@@ -3,63 +3,20 @@ import os
 import random 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
-from nltk.tokenize import wordpunct_tokenize
-
 
 import prompt.constants as constants
 
-# https://github.com/ysmiura/ifcc/blob/6c111dbdfe7ce9d3150a5ad90360584cfd2b8442/clinicgen/text/tokenizer.py#L24
-# Improving Factual Completeness and Consistency of Image-to-text Radiology Report Generation.
-def ifcc_clean_report(report):
-    report = report.lower()
-    return ' '.join(wordpunct_tokenize(report))
+def load_data(modality, data_type, split):
+    if modality == 'XR_chest':
+        modality_dir = os.path.join(constants.DATA_DIR, 'mimic-cxr')
+    else:
+        modality_dir = os.path.join(constants.DATA_DIR, 'mimic-iii', modality)
+    path = os.path.join(modality_dir, f'{split}.{data_type}.tok')
 
-def split_sentences(sentences, processing):
-    return [processing(s.strip()).split() for s in sentences]
-
-
-def make_sentences(root, split, file, processing):
-    sentences = load_file(os.path.join(root, split + '.' + file))
-    return split_sentences(sentences, processing)
-
-def load_file(path):
-    """Default loading function, which loads nth sentence at line n.
-    """
     with open(path, 'r') as f:
-        content = f.read().strip()
-    return [s for s in content.split('\n')]
+        data_list = f.readlines()
 
-
-def load_findings_concepts_and_summary(modality, concept_type, split):
-    # finding_path = os.path.join(constants.DATA_DIR, modality, f'{split}.findings.tok')
-    concept_path = os.path.join(constants.DATA_DIR, modality, f'{split}.{concept_type}.tok')
-    # summary_path = os.path.join(constants.DATA_DIR, modality, f'{split}.impression.tok')
-
-    finding_path = os.path.join(f'/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/findings/{split}.findings.tok')
-    summary_path = os.path.join(f'/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/impression/{split}.impression.tok')
-
-    # with open(finding_path, 'r') as f_f, open(summary_path, 'r') as f_s:
-    #     findings_list = f_f.readlines()
-    #     summary_list = f_s.readlines()
-        
-    #     print(len(findings_list), len(summary_list))
-    #     assert len(findings_list) == len(summary_list)
-
-    findings_list = make_sentences(root='/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/findings/', split=split, file='findings.tok', processing=ifcc_clean_report)
-    findings_list = [" ".join(findings) for findings in findings_list]
-    summary_list = make_sentences(root='/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/impression/', split=split, file='impression.tok', processing=ifcc_clean_report)
-    summary_list = [" ".join(summ) for summ in summary_list]
-
-    print(len(findings_list), len(summary_list), summary_list[0])
-    concepts_list = []
-    # if os.path.exists(concept_path):
-    #     with open(concept_path, 'r') as f_c:
-    #         concepts_list = f_c.readlines()
-
-    #         assert len(findings_list) == len(concepts_list)
-
-    return findings_list, concepts_list, summary_list
-
+    return data_list
 
 def generate_faiss_index(examples, faiss_index_save_path, sentence_transformer_name=constants.IN_CONTEXT_LEARNING_SENTENCE_TRANSFORMER):
     model = SentenceTransformer(sentence_transformer_name)

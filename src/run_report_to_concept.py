@@ -2,13 +2,15 @@ import os
 from tqdm import tqdm 
 
 import prompt.constants as constants
-from prompt.utils import load_findings_concepts_and_summary
-from report_to_concept.utils import get_concepts
+from report_to_concept.utils import get_concepts, ifcc_clean_report, make_sentences
 
-DATA_DIR = '/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/concepts'
+DATA_DIR = '/home/cvanuden/git-repos/conceptGPT/data/rrs/mimic-cxr'
 
 for split in ['train', 'validate', 'test']:
-    findings_list, _, summary_list = load_findings_concepts_and_summary(modality=constants.MODALITY, concept_type='all_concepts', split=split)
+    findings_list = make_sentences(root=DATA_DIR, split=split, file='findings.tok', processing=ifcc_clean_report)
+    findings_list = [" ".join(findings) for findings in findings_list]
+    summary_list = make_sentences(root=DATA_DIR, split=split, file='impression.tok', processing=ifcc_clean_report)
+    summary_list = [" ".join(summ) for summ in summary_list]
 
     concepts_list = []
     for finding in tqdm(findings_list, total=len(findings_list)):

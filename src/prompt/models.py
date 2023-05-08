@@ -1,7 +1,7 @@
 import openai
 import backoff  # for exponential backoff
 
-import constants
+import prompt.constants as constants
 
 openai.organization = "org-4KtF0NDlYTDYngBanKKnzlpd"
 openai.api_key = "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"

@@ -1,5 +1,5 @@
 PROJECT_DIR = '/home/cvanuden/git-repos/conceptGPT'
-DATA_DIR = '/home/cvanuden/git-repos/radprompt/data/rrs/mimic-iii'
+DATA_DIR = '/home/cvanuden/git-repos/radprompt/data/rrs/'
 
 MODALITY = 'XR_chest'
 

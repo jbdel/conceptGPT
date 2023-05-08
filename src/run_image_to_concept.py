@@ -13,7 +13,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 
-from image_to_concept.models import BiomedCLIPClassifier
+from image_to_concept.models import BiomedCLIPClassifier, CheXzeroClassifier
 from image_to_concept.datasets import fetch_data
 from image_to_concept.utils import get_cutoff_freq
 
@@ -21,12 +21,14 @@ from image_to_concept.utils import get_cutoff_freq
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
 
-EXP_NAME = 'img2concept'
+EXP_NAME = 'img2concept_chexzero_linear'
 
 IMAGE_DIR = '/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/findings'
 DATA_DIR = '/home/cvanuden/git-repos/vilmedic/data/RRG/mimic-cxr/concepts'
 LOG_DIR = '/home/cvanuden/git-repos/conceptGPT/logs/'
 CKPT_DIR = '/home/cvanuden/git-repos/conceptGPT/ckpts/'
+
+CHEXZERO_CKPT_PATH = '/home/cvanuden/git-repos/conceptGPT/ckpts/chexzero/best_64_0.0001_original_35000_0.864.pt'
 
 CONCEPT_TYPES = ["all_concepts", "concat_concepts"]
 THRESHOLDS = [0.001]
@@ -75,7 +77,9 @@ for i, concept_type in enumerate(CONCEPT_TYPES):
 
         # Do experiments
         train_dataloader, val_dataloader = fetch_data(filtered_concepts, concept_type, annotations, IMAGE_DIR, num_workers=NUM_WORKERS)
-        model = BiomedCLIPClassifier(output_dim=num_concepts)
+        # model = BiomedCLIPClassifier(output_dim=num_concepts)
+        model = CheXzeroClassifier(model_path=CHEXZERO_CKPT_PATH, freeze_encoder=True, output_dim=num_concepts)
 
-        trainer = pl.Trainer(callbacks=callbacks, logger=logger, gpus=1, deterministic=True, max_epochs=MAX_EPOCHS)
+        # TODO: switch to half-precision?
+        trainer = pl.Trainer(callbacks=callbacks, logger=logger, max_epochs=MAX_EPOCHS, gpus=1, deterministic=True)
         trainer.fit(model, train_dataloader, val_dataloader)
