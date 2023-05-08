@@ -15,8 +15,9 @@ THRESHOLDS = [0.001]
 
 ## Define Zero Shot Labels and Templates
 
+SPLIT = 'test'
 # ----- DIRECTORIES ------ #
-cxr_filepath: str = 'CheXzero/data/cxr.h5' # filepath of chest x-ray images (.h5)
+cxr_filepath: str = f'CheXzero/data/cxr_{SPLIT}.h5' # filepath of chest x-ray images (.h5)
 cxr_true_labels_path: Optional[str] = 'CheXzero/data/groundtruth.csv' # (optional for evaluation) if labels are provided, provide path
 model_dir: str = '/home/cvanuden/git-repos/conceptGPT/ckpts/chexzero' # where pretrained models are saved (.pt) 
 predictions_dir: Path = Path('CheXzero/predictions') # where to save predictions
@@ -44,18 +45,17 @@ for subdir, dirs, files in os.walk(model_dir):
 for i, concept_type in enumerate(CONCEPT_TYPES):
     annotations = {}
     for split in ['train', 'validate', 'test']:
+        annotations[split] = {}
         concept_path = os.path.join(DATA_DIR, f'{split}.{concept_type}.tok')
         with open(concept_path) as f:
             split_annotations = f.readlines()
-            annotations[split] = {}
-            annotations[split][concept_type] = [annot.split(',') for annot in split_annotations]
-
+            annotations[split][concept_type] = [annot.strip("\n").split(',') for annot in split_annotations]
+    
     for j, threshold in enumerate(THRESHOLDS):
-        train_concepts = [string for string_list in annotations['train'][concept_type] for string in string_list]
+        train_concepts = [string for string_list in annotations['train'][concept_type] for string in string_list if len(string) > 0]
         c = Counter(train_concepts)
         # get required frequency n to keep concepts that appears at least threshold percent of the time
         n = get_cutoff_freq(c, threshold)
-        print(train_concepts[:10], n)
         filtered_concepts = [key for key, value in c.items() if value >= n]
         num_concepts = len(filtered_concepts)
         print(f"exp {i * 4 + j + 1}: concept_type {concept_type}, num_concepts {num_concepts}, exclude threshold {threshold}")
@@ -66,7 +66,7 @@ for i, concept_type in enumerate(CONCEPT_TYPES):
 
         # process ground truth for input images
         data = []
-        for i,row in enumerate(annotations['train'][concept_type]):
+        for i,row in enumerate(annotations[SPLIT][concept_type]):
             one_hot = np.zeros((len(cxr_labels),))
             for j,label in enumerate(cxr_labels):
                 if label in row:
@@ -97,4 +97,5 @@ for i, concept_type in enumerate(CONCEPT_TYPES):
         bootstrap_results: Tuple[pd.DataFrame, pd.DataFrame] = eval.bootstrap(test_pred, test_true, cxr_labels) # (df of results for each bootstrap, df of CI)
 
         # print results with confidence intervals
+        print(concept_type, threshold)
         print(bootstrap_results[1])
