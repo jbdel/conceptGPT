@@ -3,8 +3,8 @@ import backoff  # for exponential backoff
 
 from collections import defaultdict
 
-openai.organization = "org-4KtF0NDlYTDYngBanKKnzlpd"
-openai.api_key = "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"
+openai.organization = ""
+openai.api_key = ""
 
 
 @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
